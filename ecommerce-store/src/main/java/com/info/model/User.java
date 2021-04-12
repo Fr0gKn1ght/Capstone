@@ -14,6 +14,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 @Entity
@@ -52,6 +53,9 @@ public class User {
 	@ManyToMany(cascade = CascadeType.DETACH, fetch = FetchType.EAGER)
 	@JoinTable(name = "userProductList", joinColumns = @JoinColumn(name = "userId"), inverseJoinColumns = @JoinColumn(name = "productId"))
 	private List<Product> productList;
+	
+	@OneToMany(mappedBy = "user", cascade = CascadeType.MERGE)
+	private List<Order> orderList;
 
 	public User() {}
 	
@@ -79,6 +83,14 @@ public class User {
 
 	public void setProductList(List<Product> productList) {
 		this.productList = productList;
+	}
+	
+	public List<Order> getOrderList(){
+		return orderList;
+	}
+	
+	public void setOrderList(List<Order>orderList) {
+		this.orderList = orderList;
 	}
 
 	public String getFirstName() {

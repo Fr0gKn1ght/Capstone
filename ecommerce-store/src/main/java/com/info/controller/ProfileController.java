@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.info.model.Order;
 import com.info.model.Product;
 import com.info.model.User;
+import com.info.service.OrderService;
 import com.info.service.ProductService;
 import com.info.service.UserService;
 
@@ -25,6 +27,9 @@ public class ProfileController {
 	
 	@Autowired
 	private UserService userService;
+	
+	@Autowired
+	private OrderService orderService;
 	
 	@GetMapping("cart-product")
 	public ModelAndView cartProduct(Principal principal) {
@@ -53,7 +58,7 @@ public class ProfileController {
 		long productLongId = Long.parseLong(productId);
 		Product product = productService.getProductById(productLongId).get();
 		
-		List<Product> productList = new ArrayList<Product>();
+		List<Product> productList = user.getProductList();
 		productList.add(product);
 		user.setProductList(productList);
 		
@@ -69,4 +74,51 @@ public class ProfileController {
 		return mv;
 	}
 	
+	@GetMapping("removeFromCart/{productId}")
+	public ModelAndView removeFromCart(@PathVariable("productId")String productId,Principal principal){
+		ModelAndView mv = new ModelAndView("profile/cart-product");
+		User user = userService.findByEmail(principal.getName());
+		long productLongID = Long.parseLong(productId);
+		
+		List<Product> productList = user.getProductList();
+		int total = 0;
+		if(productList.size()>0)
+		{
+			int index = this.getFirstIndex(productLongID,productList);
+			productList.remove(index);
+			userService.update(user);
+			total = findSum(user);
+		}
+		mv.addObject("total", total);
+		mv.addObject("user", user);
+		return mv;
+	}
+	
+	private int getFirstIndex(long productId, List<Product>productList)
+	{
+		for(int i = 0; i < productList.size(); i++)
+			if(productList.get(i).getProductId()==productId)
+				return i;
+		return -1;
+	}
+	
+	@GetMapping("checkout")
+	public String checkout(Principal principal)
+	{
+		User user = userService.findByEmail(principal.getName());
+		List<Product> orderList;
+		
+		Order order = new Order();
+		
+		int total = findSum(user);
+		order.setUserID(user.getUserId());
+		order.setQuantity(user.getProductList().size());
+		order.setCost(total);
+		
+		orderService.addOrder(order);
+		
+		user.getProductList().clear();
+		userService.update(user);
+		return "profile/checkout";
+	}
 }
